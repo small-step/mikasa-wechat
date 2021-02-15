@@ -1,0 +1,10 @@
+{
+    "database_type": "mysql",
+    "database_url": "localhost",
+    "database_port": 3306,
+    "database_name": "quantmew",
+    "database_username": "root",
+    "database_password": "root",
+    "tushare_token": "e546fbc7cc7180006cd08d7dbde0e07f95b21293a924325e89ca504b",
+    "data_path": "./data"
+}

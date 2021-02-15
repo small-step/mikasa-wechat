@@ -1,0 +1,9 @@
+pandas==0.25.3
+tqdm==4.48.2
+requests==2.20.0
+peewee==3.13.1
+selenium==3.141.0
+lxml==4.5.0
+joblib==0.14.1
+pymongo==3.10.1
+tushare==1.2.60

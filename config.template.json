@@ -1,0 +1,57 @@
+{
+    // 自己的wxid和微信名称
+    "self": {
+        "id": "",
+        "name": ""
+    },
+    // 机器人响应的群聊
+    "enable_room": [
+    ],
+    // 超级管理员
+    "super_admin": [
+    ],
+    // 管理员
+    "admin": [
+    ],
+    // pm
+    "pm": [
+    ],
+    // qa
+    "qa": [
+    ],
+    // 需求数
+    "require_num": 0,
+    // bug数
+    "bug_num": 0,
+    // 股票
+    "stock": [
+    ],
+    // 推送服务
+    "push": {
+        "weather": {
+            //"798714480@chatroom": {
+            //    "enable": true,
+            //    "city": [
+            //        "北京"
+            //    ]
+            //},
+        },
+        // 熬夜冠军
+        "owl": [],
+        // 龙王
+        "dragon": []
+    },
+    // 语录信息
+    "quotations": [
+        // wxid: wxid
+        // alias: 别名
+        // path: 在data/quotations/目录下的子文件夹名称
+        //{
+        //    "wxid": "wxid_xxxxxxx",
+        //    "alias": [
+        //        "别名1"
+        //    ],
+        //    "path": "path_name"
+        //}
+    ]
+}
