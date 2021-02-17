@@ -50,6 +50,7 @@ class WeChatBot(object):
         self.scheduler.add_job(self.push_weather, 'cron', hour=7, minute=00)
         self.scheduler.add_job(self.dragon_king_job, 'cron', hour=9, minute=00)
         self.scheduler.add_job(self.push_strategy, 'cron', hour=9, minute=00)
+        self.scheduler.add_job(self.sleep_helper, 'cron', hour=0, minute=00)
         self.scheduler.start()
         websocket.enableTrace(enable_trace)
         self.ws.run_forever()
@@ -155,6 +156,12 @@ class WeChatBot(object):
             lines.append('{}的数据还没出来哦~'.format(date.strftime('%Y-%m-%d')))
         self.send_txt_msg('25137162819@chatroom', '\n'.join(lines))
 
+    def sleep_helper(self):
+        file_path = os.path.join(ASSERTS_PATH, 'sleep_helper.jpg')
+        for room in self.config['push']['sleep']:
+            self.send_img_msg(room, file_path)
+            time.sleep(1)
+
     def dragon_king_job(self):
         for item in self.data['dragon']:
             self.send_txt_msg(item['roomid'],
@@ -240,7 +247,8 @@ class WeChatBot(object):
 
     def save_config(self):
         with codecs.open(filename='config.json', mode='w', encoding='utf-8') as f:
-            json5.dump(self.config, fp=f, indent=4)
+            json.dump(self.config, fp=f, indent=4)
+            f.flush()
 
     def do_nothing(self, ctx):
         pass
@@ -416,8 +424,17 @@ class WeChatBot(object):
             if receiver not in self.config['enable_room']:
                 self.config['enable_room'].append(receiver)
                 self.get_chatroom_info()
-                self.send_txt_msg(receiver, 'done')
                 self.save_config()
+                self.send_txt_msg(receiver, 'done')
+        elif ctx == 'sleep':
+            if not receiver.endswith('@chatroom'):
+                return
+            if not self.config['push'].__contains__('sleep'):
+                self.config['push']['sleep'] = []
+            if receiver not in self.config['push']['sleep']:
+                self.config['push']['sleep'].append(receiver)
+                self.save_config()
+                self.send_txt_msg(receiver, 'done')
 
     def handle_disable_cmd(self, receiver, words):
         if len(words) < 2:
