@@ -33,7 +33,7 @@ NORMAL = 0
 QUOTATION_RECV1 = 1
 QUOTATION_RECV2 = 2
 
-TUSHARE_TOKEN = '54d49770ed4383ddefb0b1411494660c257830a6dd2c295b265fde22'
+TUSHARE_TOKEN = "adb473ce63b4b7fde30d7af35947b3b7fb1ec517d5898ce063a64e9d"
 
 INJECTOR_PATH = os.getcwd() + os.sep + 'injector'
 ASSERTS_PATH = os.getcwd() + os.sep + 'asserts'

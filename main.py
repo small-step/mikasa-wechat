@@ -10,6 +10,7 @@ import websocket
 import tushare
 from apscheduler.schedulers.background import BackgroundScheduler
 import dataframe_image as dfi
+import pandas
 
 import thirdparty.datasourcing.stock_components as stock
 import thirdparty.datasourcing.update as update
@@ -17,6 +18,10 @@ import thirdparty.datasourcing.update as update
 from constants import *
 import utils
 import amap_api
+
+
+pandas.set_option('display.unicode.ambiguous_as_wide', True)
+pandas.set_option('display.unicode.east_asian_width', True)
 
 
 class WeChatBot(object):
@@ -141,6 +146,9 @@ class WeChatBot(object):
                     time.sleep(3)
 
     def push_strategy(self):
+        today = datetime.datetime.now().date()
+        if not stock.is_trade_date(today):
+            return
         update.update()
         res = stock.get_rec_stock_list(None, 5, 1)
         date = datetime.datetime.now().date() - datetime.timedelta(days=1)
@@ -665,15 +673,14 @@ class WeChatBot(object):
             df['amount'] = df.apply(lambda x: utils.num2unit(int(float(x['amount']))), axis=1)
 
             stock_data = df[
-                ['name', 'price', 'change', 'change_price', 'pre_close', 'open', 'high', 'low', 'volume', 'amount',
+                ['code', 'name', 'price', 'change', 'change_price', 'pre_close', 'open', 'high', 'low', 'volume', 'amount',
                  'date', 'time']]
             stock_data = stock_data.rename(
-                columns={'name': '股票名称', 'price': '最新价', 'change': '涨跌幅', 'change_price': '涨跌额', 'open': '开盘价',
+                columns={'code': '股票代码', 'name': '股票名称', 'price': '最新价', 'change': '涨跌幅', 'change_price': '涨跌额', 'open': '开盘价',
                          'pre_close': '昨收', 'high': '当日最高', 'low': '当日最低', 'volume': '成交量', 'amount': '成交额',
                          'date': '日期', 'time': '时间'})
-            df_styled = stock_data.style.background_gradient()
             file_path = os.path.join(TMP_PATH, 'stock.png')
-            dfi.export(df_styled, file_path)
+            stock_data.dfi.export(file_path)
             self.send_img_msg(roomid, file_path)
         elif authority == SUPER_ADMIN:
             if words[1].__eq__('添加自选'):
@@ -681,11 +688,13 @@ class WeChatBot(object):
                     if words[i] not in self.config['stock']:
                         self.config['stock'].append(words[i])
                 self.save_config()
+                self.send_txt_msg(roomid, '添加完成！')
             elif words[1].__eq__('删除自选'):
                 for i in range(2, len(words)):
                     if words[i] in self.config['stock']:
                         self.config['stock'].remove(words[i])
                 self.save_config()
+                self.send_txt_msg(roomid, '删除完成！')
 
     def handle_cmd_strategy(self, roomid, words):
         topk = 5
@@ -951,11 +960,8 @@ def main():
     if r != 0:
         print('[wxbot] 注入失败，进程结束！')
         return
-    print('[wxbot] 注入成功！正在启动微信机器人.', end='')
+    print('[wxbot] 注入成功！正在启动微信机器人...')
     time.sleep(1)
-    print('.', end='')
-    time.sleep(1)
-    print('.')
     bot = WeChatBot()
     bot.run(enable_trace=False)
 
