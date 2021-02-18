@@ -30,6 +30,7 @@ class WeChatBot(object):
         self.req_cnt = 0
 
         self.config = {}
+        self.bot_info = {}
         self.data = {}
         self.chatroom = {}
         self.wxid2name = {}
@@ -141,7 +142,7 @@ class WeChatBot(object):
 
     def push_strategy(self):
         update.update()
-        res = stock.get_rec_stock_list(None, 10, 1)
+        res = stock.get_rec_stock_list(None, 5, 1)
         date = datetime.datetime.now().date() - datetime.timedelta(days=1)
         lines = []
         for item in res:
@@ -151,10 +152,11 @@ class WeChatBot(object):
             lines.append('{:<10} {:<8} {:.1f}'.format(item['code'], name, item['rec']))
         if len(lines) > 0:
             lines.insert(0, '{:<8} {:<8} {}'.format('股票代码', '股票名称', '评分'))
-            lines.insert(0, '根据{}的数据策略如下：'.format(date.strftime('%Y-%m-%d')))
+            lines.insert(0, '[{}][北向策略]：'.format(date.strftime('%Y-%m-%d')))
         else:
             lines.append('{}的数据还没出来哦~'.format(date.strftime('%Y-%m-%d')))
-        self.send_txt_msg('25137162819@chatroom', '\n'.join(lines))
+        for room in self.config['push']['stock_strategy']:
+            self.send_txt_msg(room, '\n'.join(lines))
 
     def sleep_helper(self):
         file_path = os.path.join(ASSERTS_PATH, 'sleep_helper.jpg')
@@ -246,7 +248,8 @@ class WeChatBot(object):
         self.ws.send(json.dumps(msg))
 
     def save_config(self):
-        with codecs.open(filename='config.json', mode='w', encoding='utf-8') as f:
+        config_file = os.path.join(CONFIG_PATH, 'config.' + self.bot_info['id'] + '.json')
+        with codecs.open(filename=config_file, mode='w', encoding='utf-8') as f:
             json.dump(self.config, fp=f, indent=4)
             f.flush()
 
@@ -255,7 +258,11 @@ class WeChatBot(object):
 
     def handle_self_info(self, msg):
         print('[message] 机器人身份信息 {}'.format(msg))
-        content = json5.loads(msg['content'])
+        content = json.loads(msg['content'])
+        self.bot_info = {
+            'id': content['wx_id'],
+            'name': content['wx_name']
+        }
         self.wxid2name[content['wx_id']] = {'name': content['wx_name']}
         self.name2wxid[content['wx_name']] = content['wx_id']
         t = threading.Thread(target=self.init_config, args=(content['wx_id'],), daemon=True)
@@ -703,7 +710,7 @@ class WeChatBot(object):
             lines.append('{:<10} {:<8} {:.1f}'.format(item['code'], name, item['rec']))
         if len(lines) > 0:
             lines.insert(0, '{:<8} {:<8} {}'.format('股票代码', '股票名称', '评分'))
-            lines.insert(0, '根据{}的数据策略如下：'.format(date.strftime('%Y-%m-%d')))
+            lines.insert(0, '[{}][北向策略]：'.format(date.strftime('%Y-%m-%d')))
         else:
             lines.append('{}的数据还没出来哦~'.format(date.strftime('%Y-%m-%d')))
         self.send_txt_msg(roomid, '\n'.join(lines))

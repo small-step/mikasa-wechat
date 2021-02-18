@@ -137,8 +137,18 @@ def get_rec_stock_list(cur_date=None, topk=5, daydelta=1):
         if r is not None:
             ret_stock_list.append(each_data)
 
-    print(ret_stock_list[:topk])
-    return ret_stock_list[:topk]
+    res = []
+    cnt = 0
+    for stock in ret_stock_list:
+        if cnt == topk:
+            break
+        if stock['code'].startswith('300') or stock['code'].startswith('688'):
+            continue
+        res.append(stock)
+        cnt += 1
+
+    return res
+
 
 if __name__ == "__main__":
     get_rec_stock_list()

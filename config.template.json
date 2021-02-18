@@ -39,7 +39,11 @@
         // 熬夜冠军
         "owl": [],
         // 龙王
-        "dragon": []
+        "dragon": [],
+        // 提醒睡觉小助手
+        "sleep": [],
+        // 股票策略
+        "stock_strategy": []
     },
     // 语录信息
     "quotations": [
