@@ -72,21 +72,3 @@ def get_weather(url):
         lines.append('下午温度：{}，降雨概率：{}'.format(afternoon_temp[0], afternoon_rain[0]))
         lines.append('晚上温度：{}，降雨概率：{}'.format(night_temp[0], night_rain[0]))
         return '\n'.join(lines)
-
-
-def get_chat_content(question):
-    appid = '770e1376073466aef4e532a7af0850a2'
-    url = 'https://api.ownthink.com/bot?appid={}&userid=alinshans&spoken={}'.format(appid, question)
-    headers = {
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-        'Accept-Language': 'zh-CN,zh;q=0.9',
-        'Cache-Control': 'max-age=0',
-        'Connection': 'keep-alive',
-        'Host': 'api.ownthink.com',
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.102 Safari/537.36",
-    }
-    ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.10240"
-    with requests.request('GET', url, headers=headers) as res:
-        answer = res.text
-        answer = json.loads(answer)
-        return answer

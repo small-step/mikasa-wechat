@@ -149,6 +149,4 @@ def get_rec_stock_list(cur_date=None, topk=5, daydelta=1):
 
     return res
 
-
-if __name__ == "__main__":
-    get_rec_stock_list()
+get_rec_stock_list()

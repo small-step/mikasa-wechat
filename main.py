@@ -117,10 +117,11 @@ class WeChatBot(object):
     def autosave_data(self):
         if not self.need_update: return
         with codecs.open(filename='tmp/data.json', mode='w', encoding='utf-8') as f:
-            json5.dump(self.data, fp=f, indent=4)
+            json.dump(self.data, fp=f, indent=4)
         self.need_update = False
 
     def reset_data(self):
+        print('[INFO] reset data')
         self.data['dragon'].clear()
         for roomid in self.data['record'].keys():
             if roomid not in self.config['push']['dragon']:
@@ -360,7 +361,7 @@ class WeChatBot(object):
 
         if not is_txt: return
         if not receiver.endswith('@chatroom'):
-            self.handle_priv_chat()
+            self.handle_priv_chat(receiver, sender, content)
         else:
             if receiver not in self.config['enable_room']: return
             if output:
@@ -370,7 +371,7 @@ class WeChatBot(object):
             self.need_update = True
             self.handle_room_chat(receiver, sender, content)
 
-    def handle_priv_chat(self):
+    def handle_priv_chat(self, receiver, sender, content):
         pass
 
     def handle_room_chat(self, roomid, sender, content):
@@ -386,21 +387,18 @@ class WeChatBot(object):
             authority |= QA
         words = str(content).split(' ')
         words = list(filter(None, words))
+
         if self.is_self:
-            # if self.parse_self_command(roomid, words):
-            #     return
             if self.parser_command(roomid, sender, words, SUPER_ADMIN):
                 return
-            if words[0].lower() == 'mikasa' or words[0] == '老婆':
-                self.auto_chat(roomid, sender, words)
+            if words[0].lower() == 'ping':
+                self.send_txt_msg(roomid, 'pong!')
         elif roomid.__eq__('25137162819@chatroom'):
             if self.parser_command(roomid, sender, words, authority):
                 return
         elif words[0].lower() == 'mikasa' and len(words) > 1:
             if self.parser_command(roomid, sender, words[1:], authority):
                 return
-            # else:
-            #     self.auto_chat(roomid, sender, words)
 
         if not self.data['record'].__contains__(roomid):
             self.data['record'][roomid] = {sender: [content]}
@@ -474,6 +472,11 @@ class WeChatBot(object):
         elif ctx == 'room':
             self.get_chatroom_info()
             self.send_txt_msg(receiver, 'update finished.')
+        elif ctx == 'stock':
+            day = 7
+            self.send_txt_msg(receiver, '开始更新{}天内的数据...'.format(day))
+            update.update(day)
+            self.send_txt_msg(receiver, '更新完成！')
 
     def parser_command(self, roomid, sender, words, authority):
         print('LOG([parser_command):', roomid, sender, words, authority)
@@ -538,15 +541,6 @@ class WeChatBot(object):
             self.handle_cmd_update(roomid, words)
             is_command = True
         return is_command
-
-    def auto_chat(self, roomid, sender, words):
-        res = utils.get_chat_content(words[1])
-        if res['message'].__eq__('success'):
-            text = res['data']['info']['text']
-            if sender == self.config['self']['id']:
-                if '晚安' in text:
-                    text = text + ' 爱你么么哒！'
-            self.send_txt_msg(roomid, '{}'.format(text))
 
     def handle_cmd_requirement(self, roomid, sender, words):
         if len(words) < 2: return
@@ -708,6 +702,7 @@ class WeChatBot(object):
         if len(res) == 0:
             self.send_txt_msg(roomid, '{}的数据还没出来哦，自动查找更早之前的策略'.format(date.strftime('%Y-%m-%d')))
             while len(res) == 0:
+                print('查找{}的数据'.format(date.strftime('%Y-%m-%d')))
                 daydelta += 1
                 res = stock.get_rec_stock_list(None, topk, daydelta)
                 date = datetime.datetime.now().date() - datetime.timedelta(days=daydelta)
