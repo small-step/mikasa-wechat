@@ -107,15 +107,20 @@ class WeChatBot(object):
         with codecs.open(filename='data/keyword.txt', mode='r', encoding='utf-8') as f:
             for line in f.readlines():
                 self.key_word.append(line.rstrip())
-        with codecs.open(filename='tmp/data.json', mode='r', encoding='utf-8') as f:
-            self.data = json5.load(f)
-
+        if os.path.exists('tmp/data.json'):
+            with codecs.open(filename='tmp/data.json', mode='r', encoding='utf-8') as f:
+                self.data = json5.load(f)
+        else:
+            self.data['record'] = {}
+            self.data['key_word_count'] = {}
+            self.data['dragon'] = []
         print('[wxbot] 正在给机器人寻找好友...')
         self.get_user_list()
         self.get_chatroom_info()
 
     def autosave_data(self):
-        if not self.need_update: return
+        if not self.need_update:
+            return
         with codecs.open(filename='tmp/data.json', mode='w', encoding='utf-8') as f:
             json.dump(self.data, fp=f, indent=4)
         self.need_update = False
@@ -123,14 +128,15 @@ class WeChatBot(object):
     def reset_data(self):
         print('[INFO] reset data')
         self.data['dragon'].clear()
-        for roomid in self.data['record'].keys():
-            if roomid not in self.config['push']['dragon']:
-                continue
-            max_len, dragon = 0, ''
-            for wxid in self.data['record'][roomid].keys():
-                if len(self.data['record'][roomid][wxid]) > max_len:
-                    max_len, dragon = len(self.data['record'][roomid][wxid]), wxid
-            self.data['dragon'].append({'roomid': roomid, 'dragon': dragon})
+        if self.config['push'].__contains__('dragon'):
+            for roomid in self.data['record'].keys():
+                if roomid not in self.config['push']['dragon']:
+                    continue
+                max_len, dragon = 0, ''
+                for wxid in self.data['record'][roomid].keys():
+                    if len(self.data['record'][roomid][wxid]) > max_len:
+                        max_len, dragon = len(self.data['record'][roomid][wxid]), wxid
+                self.data['dragon'].append({'roomid': roomid, 'dragon': dragon})
         self.data['record'].clear()
         self.data['key_word_count'].clear()
         self.need_update = True
@@ -383,18 +389,20 @@ class WeChatBot(object):
         if not receiver.endswith('@chatroom'):
             self.handle_priv_chat(receiver, sender, content)
         else:
-            if receiver not in self.config['enable_room']: return
+            if receiver not in self.config['enable_room']:
+                return
             if output:
                 self.room_log_file[receiver].writelines(output)
                 self.room_log_file[receiver].writelines('\n')
                 self.room_log_file[receiver].flush()
             self.need_update = True
-            self.handle_room_chat(receiver, sender, content)
+            self.handle_room_chat(receiver, sender, msg)
 
     def handle_priv_chat(self, receiver, sender, content):
         pass
 
-    def handle_room_chat(self, roomid, sender, content):
+    def handle_room_chat(self, roomid, sender, msg):
+        content = str(msg['content'])
         if sender in self.config['super_admin']:
             authority = SUPER_ADMIN
         elif sender in self.config['admin']:
@@ -405,7 +413,7 @@ class WeChatBot(object):
             authority |= PM
         if sender in self.config['qa']:
             authority |= QA
-        words = str(content).split(' ')
+        words = content.split(' ')
         words = list(filter(None, words))
 
         if self.is_self:
@@ -421,11 +429,11 @@ class WeChatBot(object):
                 return
 
         if not self.data['record'].__contains__(roomid):
-            self.data['record'][roomid] = {sender: [content]}
+            self.data['record'][roomid] = {sender: [{'text': content, 'time': msg['time']}]}
         elif not self.data['record'][roomid].__contains__(sender):
-            self.data['record'][roomid][sender] = [content]
+            self.data['record'][roomid][sender] = [{'text': content, 'time': msg['time']}]
         else:
-            self.data['record'][roomid][sender].append(content)
+            self.data['record'][roomid][sender].append({'text': content, 'time': msg['time']})
 
         if not self.data['key_word_count'].__contains__(sender):
             self.data['key_word_count'][sender] = 0
@@ -791,10 +799,10 @@ class WeChatBot(object):
     def handle_cmd_repeat(self, roomid, words, authority):
         if len(words) == 3:
             name = words[1].lstrip('@').rstrip(' ')
-            if not self.name2wxid.__contains__(name):
+            if not self.name2wxid.__contains__(roomid) or not self.name2wxid[roomid].__contains__(name):
                 self.send_txt_msg(roomid, '没有找到「{}」这个人了捏'.format(name))
                 return
-            id = self.name2wxid[name]
+            id = self.name2wxid[roomid][name]
             if not self.data['record'].__contains__(roomid) or not self.data['record'][roomid].__contains__(id):
                 self.send_txt_msg(roomid, '没有记录了啦')
                 return
@@ -819,8 +827,8 @@ class WeChatBot(object):
                 time.sleep(1)
                 num = 20
             lines = ['「{}」最后说过的{}句话：'.format(name, num)]
-            for say in self.data['record'][roomid][id][len(self.data['record'][roomid][id]) - num:]:
-                lines.append(say)
+            for record in self.data['record'][roomid][id][len(self.data['record'][roomid][id]) - num:]:
+                lines.append('{} {}:\n{}'.format(record['time'], name, record['text']))
             self.send_txt_msg(roomid, '\n'.join(lines))
         else:
             self.send_txt_msg(roomid, '指令有误，请检查输入')
