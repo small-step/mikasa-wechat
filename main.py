@@ -474,6 +474,8 @@ class WeChatBot(object):
             self.send_txt_msg(receiver, 'update finished.')
         elif ctx == 'stock':
             day = 7
+            if len(words) > 2:
+                day = int(words[2])
             self.send_txt_msg(receiver, '开始更新{}天内的数据...'.format(day))
             update.update(day)
             self.send_txt_msg(receiver, '更新完成！')
