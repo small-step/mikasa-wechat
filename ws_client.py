@@ -63,7 +63,7 @@ class WeChatBot(object):
 
     def on_open(self):
         print('[wxbot] 正在验证机器人身份...')
-        self.handle_self_info({})
+        self.get_self_info()
 
     def on_message(self, message):
         ctx = json.loads(message)
@@ -197,16 +197,19 @@ class WeChatBot(object):
             self.get_chatroom_info()
         return self.wxid2name[wxid][roomid]
 
-    # 这两个接口暂时还不支持，不能获取个人信息，只能先自己写死
-    # def get_self_info(self):
-    #     req = {
-    #         'id': self.get_id(),
-    #         'type': PERSONAL_INFO,
-    #         'content': 'op:personal info',
-    #         'wxid': 'ROOT',
-    #     }
-    #     self.ws.send(json.dumps(req))
-    #
+    def get_self_info(self):
+        req = {
+            'id': self.get_id(),
+            'type': PERSONAL_INFO,
+            'wxid': 'null',
+            'roomid': 'null',
+            'content': 'null',
+            'nickname': 'null',
+            'ext': 'null'
+        }
+        self.ws.send(json.dumps(req))
+
+    # 接口暂不支持
     # def get_self_detail_info(self):
     #     req = {
     #         'id': self.get_id(),
@@ -278,6 +281,30 @@ class WeChatBot(object):
         }
         self.ws.send(json.dumps(msg))
 
+    def send_at_msg(self, roomid, content, nickname):
+        msg = {
+            'id': self.get_id(),
+            'type': AT_MSG,
+            'roomid': roomid,
+            'wxid': self.bot_info['id'],
+            'content': content,
+            'nickname': nickname,
+            'ext': 'null'
+        }
+        self.ws.send(json.dumps(msg))
+
+    def send_attatch(self, to, file):
+        msg = {
+            'id': self.get_id(),
+            'type': ATTATCH_FILE,
+            'wxid': to,
+            'roomid': 'null',
+            'content': file,
+            'nickname': 'null',
+            'ext': 'null'
+        }
+        self.ws.send(json.dumps(msg))
+
     def save_config(self):
         config_file = os.path.join(CONFIG_PATH, 'config.' + self.bot_info['id'] + '.json')
         with codecs.open(filename=config_file, mode='w', encoding='utf-8') as f:
@@ -288,12 +315,8 @@ class WeChatBot(object):
         pass
 
     def handle_self_info(self, msg):
-        # content = json.loads(msg['content'])
-        # 因为获取个人信息的接口现在暂时没法用了
-        content = {
-            'wx_id': 'wxid_1qbiovhcy6vm12',
-            'wx_name': 'Mikasa'
-        }
+        content = json.loads(msg['content'])
+        print(f'[message] {content}')
         self.bot_info = {
             'id': content['wx_id'],
             'name': content['wx_name']
@@ -420,7 +443,8 @@ class WeChatBot(object):
             if self.parser_command(roomid, sender, words, SUPER_ADMIN):
                 return
             if words[0].lower() == 'ping':
-                self.send_txt_msg(roomid, 'pong!')
+                time.sleep(3)
+                self.send_at_msg(roomid, 'pong!', self.get_name(roomid, sender))
         elif roomid.__eq__('25137162819@chatroom'):
             if self.parser_command(roomid, sender, words, authority):
                 return
@@ -502,6 +526,8 @@ class WeChatBot(object):
             self.send_txt_msg(receiver, 'update finished.')
         elif ctx == 'stock':
             day = 7
+            if len(words) > 2:
+                day = int(words[2])
             self.send_txt_msg(receiver, '开始更新{}天内的数据...'.format(day))
             update.update(day)
             self.send_txt_msg(receiver, '更新完成！')
